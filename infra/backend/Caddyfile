@@ -1,0 +1,44 @@
+# Caddy in front of the backend on the AWS ap-south-1 VM.
+# PUBLIC_HOST = <public-ip-with-dashes>.sslip.io (e.g. 13-233-10-25.sslip.io): sslip.io resolves
+# it to the IP, so Caddy gets a real certificate automatically (Let's Encrypt, ZeroSSL fallback)
+# with no domain to buy. The browser mic needs HTTPS and an HTTPS page can only open wss://.
+{
+	email {$ACME_EMAIL}
+	servers {
+		timeouts {
+			read_body 30s
+			read_header 10s
+			write 0
+			idle 5m
+		}
+	}
+}
+
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	# WebSocket /call and REST. Caddy proxies the Upgrade itself; Origin is checked by the
+	# backend (ALLOWED_ORIGINS), which closes foreign origins with 1008. Caddy sets
+	# X-Forwarded-For from the real client address; the backend trusts it (TRUST_FORWARDED_FOR).
+	reverse_proxy backend:8000 {
+		# Keep live calls open across a Caddy config reload (calls are capped at 8 min).
+		stream_close_delay 10m
+		# A stuck stream is cut after 30 min; normal calls end far sooner.
+		stream_timeout 30m
+		flush_interval -1
+		health_uri /healthz
+		health_interval 30s
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

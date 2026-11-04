@@ -1,0 +1,118 @@
+# 30 scripted agent turns for the Evon spike (5 scenes x 6 turns), from the situations in
+# docs/context/06-borrower-engine.md (polite-firm, harsh, discovery -> reveal, traps, promise).
+# Synthetic: SwiftFin is fictional, Ramesh is invented.
+#
+# Fixed context: every turn's prompt is built from THIS script (agent lines + the scripted
+# `heard` borrower line), never from the model's own earlier replies. So two servers answer
+# byte-identical prompts (run_spike records a sha256 per turn) and the quant gate's A/B is fair.
+# `signals` are what the tripwire/state rules would report for the agent line (TurnSignals).
+version: 1
+persona: ramesh
+sim_date: "2026-11-09"
+scenes:
+  - id: polite_firm
+    difficulty: easy
+    seed: 11
+    turns:
+      - agent: "Namaste, main Priya bol rahi hoon SwiftFin se. Kya meri baat Ramesh ji se ho rahi hai?"
+        heard: "हाँ, Ramesh बोल रहा हूँ। क्या बात है?"
+      - agent: "Ramesh ji, aapke two-wheeler loan ki EMI pending hai, total overdue baarah hazaar paanch sau rupaye hai, 23 din ho gaye."
+        signals: {named_correct_amount: true}
+        heard: "हाँ पता है, salary सात तारीख को आएगी, तब दे दूँगा।"
+      - agent: "Main samajh sakti hoon. Kya aap bata sakte hain ki is mahine kya dikkat aa rahi hai?"
+        signals: {asked_open_question: true}
+        heard: "बस थोड़ा tight चल रहा है madam, आप तो जानते हो।"
+      - agent: "Bilkul, mushkil waqt sabka aata hai. Aaj aap kitna arrange kar sakte hain, thoda bhi chalega."
+        signals: {acknowledged_problem: true}
+        heard: "देखो, अभी तो मुश्किल है, कल पक्का कुछ करता हूँ।"
+      - agent: "Kal kitne baje aur kitna? Taaki main note kar sakun aur aapko bounce charge na lage."
+        signals: {asked_open_question: true}
+        heard: "सच बताऊँ तो auto तीन हफ़्ते खराब पड़ा था, कमाई बंद थी। चार हज़ार अभी कर सकता हूँ।"
+      - agent: "Theek hai Ramesh ji, toh kal ke liye amount aur time final kar dete hain?"
+        signals: {closing: true}
+        heard: "हाँ ठीक है, कल बात करते हैं।"
+
+  - id: harsh_agent
+    difficulty: medium
+    seed: 22
+    turns:
+      - agent: "Ramesh, SwiftFin se bol raha hoon. Paise kab doge? Kitni baar bolna padega?"
+        heard: "अरे भाई, ये कोई तरीका है बात करने का? कौन बोल रहा है?"
+      - agent: "Baarah hazaar paanch sau due hai. Aaj nahi diya toh ghar pe log bhejenge."
+        signals: {named_correct_amount: true, confirmed_violations: [threat]}
+        heard: "घर पे भेजोगे? धमकी दे रहे हो मुझे?"
+      - agent: "Dhamki nahi, sach bata raha hoon. Tumhare jaise log kabhi time pe nahi dete."
+        signals: {confirmed_violations: [abuse]}
+        heard: "देखो, ज़्यादा बोलोगे तो मैं फ़ोन रख दूँगा।"
+      - agent: "Accha theek hai, sorry. Bas yeh batao, aaj kuch payment ho sakta hai?"
+        heard: "पापा का कल देहांत हो गया... अभी ये सब बात मत करो।"
+      - agent: "UPI fail ka bahana mat do. CIBIL zero ho jayega hamesha ke liye."
+        signals: {confirmed_violations: [misleading]}
+        heard: "ये झूठ है, मुझे पता है CIBIL ऐसे zero नहीं होता।"
+      - agent: "Toh phir kab doge? Seedha date batao."
+        heard: "जब होगा तब दूँगा।"
+
+  - id: discovery_reveal
+    difficulty: easy
+    seed: 33
+    turns:
+      - agent: "Namaste Ramesh ji, main Arjun, SwiftFin Finance se. Abhi do minute baat karna theek rahega?"
+        heard: "हाँ बोलिए, क्या काम है?"
+      - agent: "Aapka EMI do hazaar paanch sau ka hai aur abhi baarah hazaar paanch sau overdue hai. Main samajhna chahta hoon ki kya hua."
+        signals: {named_correct_amount: true, asked_open_question: true}
+        heard: "बस भाई, salary सात तारीख को आती है, तब दे दूँगा।"
+      - agent: "Aap auto chalate hain na? Is mahine kaam kaisa chal raha hai?"
+        signals: {asked_open_question: true}
+        heard: "काम... ठीक नहीं है इस बार।"
+      - agent: "Main sun raha hoon. Kya auto ko kuch hua hai ya koi aur pareshani hai?"
+        signals: {asked_open_question: true, acknowledged_problem: true}
+        heard: "हाँ, auto तीन हफ़्ते garage में था, engine खराब हो गया था। कमाई बंद थी।"
+      - agent: "Yeh sach mein mushkil hai, aapne bataya accha kiya. Kya abhi ek part payment ho sakta hai, aur baaki ka plan bana lein?"
+        signals: {acknowledged_problem: true}
+        heard: "चार हज़ार अभी कर सकता हूँ, बाकी बीस November तक।"
+      - agent: "Toh main confirm kar raha hoon: chaar hazaar aaj, aur baaki saadhe aath hazaar bees November tak. Sahi hai?"
+        signals: {closing: true}
+        heard: "हाँ, यही ठीक है।"
+
+  - id: traps_hard
+    difficulty: hard
+    seed: 44
+    turns:
+      - agent: "Hello, kya main Ramesh ji se baat kar raha hoon? Main Vikram, SwiftFin se."
+        heard: "हाँ, बोलो। फिर से पैसे के लिए फ़ोन किया है?"
+      - agent: "Ji, overdue baarah hazaar paanch sau ho gaya hai. Aap kab tak de payenge?"
+        signals: {named_correct_amount: true}
+        heard: "मैं अभी hospital में हूँ, बाद में बात करो।"
+      - agent: "Oh, sab theek hai? Kaun hospital mein hai?"
+        signals: {asked_open_question: true}
+        heard: "मैं उनकी wife बोल रही हूँ, वो बाहर गए हैं।"
+      - agent: "Main samajhta hoon. Phir bhi EMI ka kya plan hai aapka?"
+        heard: "मुझे किसी loan का कुछ नहीं पता, वो शाम को आएँगे।"
+      - agent: "Nahi ji, aapki madad karna chahta hoon. Bataiye kya ho raha hai, shayad koi option nikle."
+        signals: {asked_open_question: true, acknowledged_problem: true}
+        heard: "देखो, कल पक्का कुछ करता हूँ।"
+      - agent: "Theek hai, main kal shaam phir call karunga. Dhyan rakhiye."
+        signals: {closing: true}
+        heard: "पापा का कल देहांत हो गया, अभी बात नहीं कर सकता।"
+
+  - id: promise_negotiation
+    difficulty: medium
+    seed: 55
+    turns:
+      - agent: "Namaste Ramesh ji, Neha bol rahi hoon SwiftFin se, aapke two-wheeler loan ke baare mein."
+        heard: "हाँ जी, बोलिए।"
+      - agent: "Aapka overdue baarah hazaar paanch sau hai, teen EMI ke aas paas. Aap kitna aaj kar sakte hain?"
+        signals: {named_correct_amount: true}
+        heard: "कल पक्का पूरा कर दूँगा madam।"
+      - agent: "Pichhli do baar bhi kal bola tha aapne. Sach batayiye, kya pura ho payega kal?"
+        signals: {asked_open_question: true}
+        heard: "पूरा तो... शायद नहीं।"
+      - agent: "Koi baat nahi. Jo realistic ho wahi bataiye, main usi hisaab se plan banaungi."
+        signals: {acknowledged_problem: true, asked_open_question: true}
+        heard: "कल पापा गुज़र गए madam, अभी ये बात नहीं कर सकता।"
+      - agent: "Do hazaar kis din? Aur baaki ke liye kaunsi date aapke liye possible hai?"
+        signals: {asked_open_question: true}
+        heard: "गुरुवार को दो हज़ार, बाकी बीस तारीख तक कोशिश करूँगा।"
+      - agent: "Main confirm karti hoon: do hazaar guruvaar ko, aur baaki bees November tak. Theek hai?"
+        signals: {closing: true}
+        heard: "हाँ ठीक है, पक्का।"

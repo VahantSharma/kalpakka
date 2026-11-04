@@ -1,0 +1,12 @@
+# BuildKit reads <Dockerfile>.dockerignore next to the Dockerfile (context = repo root).
+# Allow-list: only what the image needs. Secrets (.env) and local state never enter the context.
+*
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/.python-version
+!backend/src/**
+!content/**
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*

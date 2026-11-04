@@ -1,0 +1,48 @@
+# Backend + Caddy on one small AWS ap-south-1 VM. Run from infra/backend/ on the VM:
+#   PUBLIC_HOST=13-233-10-25.sslip.io ACME_EMAIL=you@example.com docker compose up -d --build
+# Secrets live only in /etc/kalpakka/backend.env on the VM (chmod 600), never in git.
+name: kalpakka
+
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: infra/backend/Dockerfile
+    image: kalpakka-backend:latest
+    env_file:
+      - /etc/kalpakka/backend.env
+    volumes:
+      - kalpakka-data:/app/data
+    expose:
+      - "8000"  # reachable only by Caddy on the compose network; never published
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "5"}
+
+  caddy:
+    image: caddy:2.11.6
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?set PUBLIC_HOST=<ip-with-dashes>.sslip.io}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL for certificate notices}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:  # the access log carries client IPs; keep it bounded on a small disk
+      driver: json-file
+      options: {max-size: "20m", max-file: "5"}
+
+volumes:
+  kalpakka-data: {}
+  caddy-data: {}
+  caddy-config: {}

@@ -7,4 +7,4 @@ kill criterion, or reverses a D-decision.
 
 | ADR | Title | Date | Status | Supersedes |
 |-----|-------|------|--------|-----------|
-| | | | | |
+| [ADR-001](ADR-001-evon-hosting.md) | Evon hosting: BF16 reference on Modal, own Q8_0 GGUF live on RunPod A6000 | 2026-11-05 | accepted (quant gate pending) | D6 for live turns |

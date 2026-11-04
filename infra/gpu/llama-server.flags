@@ -1,0 +1,18 @@
+# llama-server flags for Evon v3.3 Q8_0 (llama.cpp b12030). ONE source of truth: read by
+# scripts/spikes/evon_modal/serve_q8.py (Modal L40S) and infra/gpu/ (RunPod A6000).
+# Status: TARGET — confirm after P0.5. The model path (-m) and the API key (env LLAMA_API_KEY)
+# are added by the launcher; never put a key in this file.
+# One flag (and its value) per line; '#' starts a comment.
+--host 0.0.0.0
+--port 8080
+--alias evon
+# all layers on the GPU (Q8_0 ≈ 32 GB of the 48 GB)
+--n-gpu-layers 999
+# 8 slots x 16K tokens each; only the few attention layers keep a KV cache (Mamba state is fixed)
+--ctx-size 131072
+--parallel 8
+--jinja
+--metrics
+--no-webui
+# fallback if chat_template_kwargs.enable_thinking=false does not turn thinking off (P0.5 item 1):
+# --reasoning-budget 0
