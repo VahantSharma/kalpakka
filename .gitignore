@@ -21,6 +21,7 @@ out/
 web/.env.local
 
 # data and audio — never in git
+data/
 *.db
 *.sqlite
 *.sqlite3
@@ -33,10 +34,6 @@ evals/runs/
 backend/tests/fixtures/audio/*.raw
 models/
 hf_cache/
-
-# local claude code state
-.claude/settings.local.json
-CLAUDE.local.md
 
 # os / editors
 .DS_Store

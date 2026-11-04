@@ -119,3 +119,62 @@ def test_default_env_file_is_the_repo_root_dotenv() -> None:
 
     assert Settings.model_config.get("env_file") == REPO_ROOT / ".env"
     assert (REPO_ROOT / "Makefile").is_file()
+
+
+# --- call settings (P2.3) ----------------------------------------------------------------------
+
+
+def test_sim_date_is_a_fixed_story_date_not_the_wall_clock(llm_env: None) -> None:
+    import datetime as dt
+
+    settings = Settings(_env_file=None)
+    # 02: the EMI bounced on the 5th; we meet Ramesh at 23 DPD -> 2026-10-28, before his
+    # can_pay_rest_by of 2026-11-20.
+    assert settings.sim_date == dt.date(2026, 10, 28)
+
+
+def test_sim_date_can_be_overridden_from_env(
+    llm_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import datetime as dt
+
+    monkeypatch.setenv("SIM_DATE", "2026-11-02")
+    assert Settings(_env_file=None).sim_date == dt.date(2026, 11, 2)
+
+
+def test_call_defaults_are_single_call_with_caps(llm_env: None) -> None:
+    settings = Settings(_env_file=None)
+    assert settings.max_concurrent_calls == 1
+    assert settings.call_time_cap_s == 480
+    assert settings.allowed_origins == ["http://localhost:3000"]
+
+
+def test_allowed_origins_read_as_a_comma_separated_list(
+    llm_env: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://kalpakka.example, http://localhost:3000")
+    assert Settings(_env_file=None).allowed_origins == [
+        "https://kalpakka.example",
+        "http://localhost:3000",
+    ]
+
+
+def test_live_hours_parse_into_ist_windows() -> None:
+    import datetime as dt
+
+    from kalpakka.config import parse_live_hours
+
+    assert parse_live_hours("10:45-22:00, 23:00-23:30") == (
+        (dt.time(10, 45), dt.time(22, 0)),
+        (dt.time(23, 0), dt.time(23, 30)),
+    )
+    assert parse_live_hours("") == ()
+
+
+@pytest.mark.parametrize("bad", ["10:45", "22:00-10:45", "ten-eleven"])
+def test_bad_live_hours_are_rejected_at_startup(
+    llm_env: None, monkeypatch: pytest.MonkeyPatch, bad: str
+) -> None:
+    monkeypatch.setenv("LIVE_HOURS", bad)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)

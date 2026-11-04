@@ -22,6 +22,7 @@ class Script:
     first_delay_s: float = 0.0
     piece_delay_s: float = 0.0
     status: int = 200
+    abort_after: int | None = None  # break the HTTP stream after this many pieces (no [DONE])
 
 
 @dataclass
@@ -73,7 +74,9 @@ class FakeOpenAI:
         try:
             yield chunk({"role": "assistant"})
             await asyncio.sleep(script.first_delay_s)
-            for piece in script.pieces:
+            for index, piece in enumerate(script.pieces):
+                if script.abort_after is not None and index >= script.abort_after:
+                    raise ConnectionResetError("fake: stream broken mid-reply")
                 yield chunk({"content": piece})
                 await asyncio.sleep(script.piece_delay_s)
             yield chunk({}, finish="stop")

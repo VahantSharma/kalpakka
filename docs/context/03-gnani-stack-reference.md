@@ -82,7 +82,7 @@ our judge wrote, store only the embedding, delete with the player.
 
 | Fact | Status |
 |------|--------|
-| Hugging Face repo `gnani/gnani-evon-v3.3-30B-A3B`, access by request, Apache 2.0 | DOC (model card) |
+| Hugging Face repo `gnani/gnani-evon-v3.3-30B-A3B`, **not gated** (checked via the Hugging Face API on 2026-11-04), Apache 2.0 | VERIFIED (HF API, 2026-11-04) |
 | 30B-parameter hybrid Mamba–Transformer MoE, ~3.5B active per token, 11 languages, 128K context | DOC |
 | Not on Gnani's API → we self-host | DOC |
 | BF16 weights ≈ 60 GB → one 80 GB GPU (A100 80GB / H100) | DOC (model card lists H100/A100) |

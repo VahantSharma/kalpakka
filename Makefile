@@ -13,7 +13,7 @@ define pytest_allow_empty
 	$(BACKEND) $(UV) pytest $(1) || { rc=$$?; [ $$rc -eq 5 ] && echo "($(1): no tests yet)"; [ $$rc -eq 5 ]; }
 endef
 
-.PHONY: check check-fast test test-unit test-contract test-integration lint fmt type eval-tripwire
+.PHONY: check check-fast test test-unit test-contract test-integration lint fmt type dev eval-tripwire
 
 check: lint type test-unit test-contract   ## everything that must pass before a sub-phase closes
 
@@ -40,6 +40,10 @@ fmt:
 
 type:
 	$(BACKEND) $(UV) mypy
+
+dev:                                       ## backend on :8000 (needs LLM_* and GNANI_API_KEY in env or .env)
+	$(BACKEND) LIVE_ALWAYS_OPEN=true uv run --frozen uvicorn kalpakka.server:create_production_app --factory \
+	  --host 127.0.0.1 --port 8000 --reload --reload-dir src
 
 # --- evals (model/pattern behaviour; not part of check) ---
 

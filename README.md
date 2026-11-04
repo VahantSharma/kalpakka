@@ -39,9 +39,29 @@ cd .. && make check            # ruff + mypy --strict + unit + contract tests
 make check-fast                # ruff + unit tests only; offline, about 2 s
 ```
 
+```bash
+make test-integration          # a whole call through the app against fake Prisma/Timbre/LLM servers
+make dev                       # backend on http://127.0.0.1:8000 (needs the variables below)
+```
+
 Configuration comes from environment variables (or the repo-root `.env`, never committed):
 `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (any OpenAI-compatible server hosting Evon v3.3) and
-`GNANI_API_KEY`. The web app and `make dev` arrive with the voice loop (Phase 2).
+`GNANI_API_KEY`. Optional: `SIM_DATE` (the story's "today", default 2026-10-28),
+`MAX_CONCURRENT_CALLS`, `MAX_QUEUE`, `CALLS_PER_DAY`, `CALLS_PER_IP_PER_DAY`, `LIVE_HOURS`
+(IST, e.g. `10:45-22:00`), `LIVE_ALWAYS_OPEN`, `ALLOWED_ORIGINS`.
+
+## How a call works (backend)
+
+One WebSocket per call (`/call`). The browser sends 16 kHz PCM while talk is held. The backend
+streams it to **Prisma** in 1,024-byte frames at real-time pace and commits on release. It builds
+the turn brief from the borrower's state in code: mood, trust, reveal gate, traps. **Evon** streams
+the reply, and it is cut into sentences. **Timbre** speaks each sentence while the next one is still
+being written. Barge-in stops the reply, and history keeps only the sentences the trainee heard.
+Every turn records ten timestamps; `GET /metrics/latency` reports p50/p95 per stage.
+
+Honest status: the voice loop is built and tested against **fakes** that follow Gnani's documented
+protocol. No measured latency from the real services exists yet. Every Gnani fact the docs leave
+open is a single constant marked `UNVERIFIED` until the spikes run (see the phase logs).
 
 ## Data and privacy
 

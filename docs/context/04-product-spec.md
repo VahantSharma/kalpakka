@@ -38,8 +38,9 @@ emotional, code-mixed Indian borrower and get scored fairly against RBI's rules,
 6. **Share and retry** — share card ("Recovered ₹4,000 from Ramesh · 0 RBI violations · beat the
    excuse: salary on the 7th"). Each retry draws different traps.
 
-Difficulty: Easy (calm, no traps, reveal at trust > 40) · Medium (irritated, one random trap,
-trust > 60) · Hard (angry, two traps, trust > 70 **and** an open question about their situation).
+Difficulty: Easy (calm, no traps, reveal at trust ≥ reveal_trust − 20, 40 for Ramesh) · Medium
+(irritated, one random trap, trust ≥ reveal_trust, 60) · Hard (angry, two traps,
+trust ≥ reveal_trust + 10, 70, **and** an open question about their situation).
 
 ## User stories (acceptance in brackets)
 

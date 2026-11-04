@@ -38,6 +38,8 @@ Backend (FastAPI + Uvicorn, Docker, VM in Mumbai, Caddy for HTTPS)
 | `arena` | bot prompt vs borrower, run matrix, report | brain, borrower_state, tripwire, judge |
 | `metrics` | per-stage timestamps, percentiles, cost counters | — |
 | `db` | SQLite access (async-safe) | — |
+| `protocol` | browser ↔ backend WS message models (the table below) | personas |
+| `server` | FastAPI app: `/call`, REST endpoints, production wiring from `Settings` | everything |
 
 `brain`, `borrower_state`, `chunker`, `tripwire`, `judge` are **text-in, text-out** and know nothing
 about audio or sockets — that is what lets Arena run without audio and makes them unit-testable.
