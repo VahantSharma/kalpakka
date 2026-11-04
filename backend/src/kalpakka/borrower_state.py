@@ -289,6 +289,7 @@ def _schedule(
 class _Pending:
     signals: TurnSignals
     brief: TurnBrief
+    before: "BorrowerState"
 
 
 class BorrowerEngine:
@@ -344,6 +345,7 @@ class BorrowerEngine:
             raise RuntimeError(f"call is over ({s.call_over}); no more turns")
         if self._pending is not None:
             raise RuntimeError("begin_turn called twice; call end_turn first")
+        before = s.model_copy(deep=True)
 
         s.turn += 1
         if signals.asked_open_question:
@@ -388,8 +390,16 @@ class BorrowerEngine:
             excuse=excuse,
         )
         s.promise_not_serious_pending = False
-        self._pending = _Pending(signals=signals, brief=brief)
+        self._pending = _Pending(signals=signals, brief=brief, before=before)
         return brief
+
+    def cancel_turn(self) -> None:
+        """Undo `begin_turn` for a reply nobody heard (the LLM failed): the state is exactly as
+        before it, so a reveal turn does not count as told."""
+        if self._pending is None:
+            raise RuntimeError("cancel_turn called without begin_turn")
+        pending, self._pending = self._pending, None
+        self._state = pending.before
 
     def _next_excuse(self) -> str:
         s = self._state

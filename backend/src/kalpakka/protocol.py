@@ -143,6 +143,15 @@ class ErrorMsg(_Msg):
     message: str
 
 
+class ScoringFailed(_Msg):
+    """No score, never a made-up one: the flags raised live are all the browser gets."""
+
+    type: Literal["error"] = "error"
+    code: Literal["scoring_failed"] = "scoring_failed"
+    message: str = "scoring failed"
+    flags: list[dict[str, Any]]
+
+
 ServerMessage = (
     Busy
     | Briefing
@@ -156,6 +165,7 @@ ServerMessage = (
     | CallEnded
     | ScorecardMsg
     | ErrorMsg
+    | ScoringFailed
 )
 
 

@@ -47,11 +47,14 @@ from kalpakka.brain import (
     build_messages,
     stream_reply,
 )
+from kalpakka.call_tripwire import CallTripwire
 from kalpakka.chunker import Chunker
 from kalpakka.clock import Clock
 from kalpakka.db import CallRecord, Database, TurnRecord
 from kalpakka.gnani_stt import SttConfigRejected, SttTranscript, SttUnavailable
 from kalpakka.gnani_tts import SAMPLE_RATE, TtsFailed, TtsUnavailable, Voice, voice_for_persona
+from kalpakka.judge import TranscriptLine
+from kalpakka.judge_runner import JudgeInput, JudgeRun, StateSnapshot
 from kalpakka.llm import LLMClient, LLMError, Message
 from kalpakka.metrics import LatencyStore, TurnTimer
 from kalpakka.personas import Difficulty, Persona
@@ -63,12 +66,14 @@ from kalpakka.protocol import (
     EndCall,
     ErrorMsg,
     FlagMsg,
+    FlagUpdate,
     Mood,
     Played,
     ProtocolError,
     PttEnd,
     PttStart,
     ScorecardMsg,
+    ScoringFailed,
     ServerMessage,
     StartCall,
     StopAudio,
@@ -76,6 +81,7 @@ from kalpakka.protocol import (
     encode,
     parse_client_message,
 )
+from kalpakka.state_tripwire import StateTerms, agent_signals
 from kalpakka.tripwire import Flag, LexiconTripwire
 
 log = logging.getLogger(__name__)
@@ -135,6 +141,12 @@ class TextToSpeech(Protocol):
 
 class ReplySource(Protocol):
     def reply(self, messages: Sequence[Message]) -> AsyncGenerator[ReplyEvent, None]: ...
+
+
+class CallScorer(Protocol):
+    """Scores a finished call from what the session itself knows (engine truth, flag ledger)."""
+
+    async def score(self, data: JudgeInput) -> JudgeRun: ...
 
 
 class FixedLines(Protocol):
@@ -221,6 +233,11 @@ class CallDeps:
     backup_voice: Voice | None = None
     latency: LatencyStore = field(default_factory=LatencyStore)
     judge: CallJudge | None = None
+    # Per-call tripwire (all three layers) + the respect-marker terms; when set they replace
+    # `analyzer`. `scorer` replaces `judge`.
+    tripwire_factory: Callable[[Persona], CallTripwire] | None = None
+    state_terms: StateTerms | None = None
+    scorer: CallScorer | None = None
 
 
 def story_setup(
@@ -259,6 +276,7 @@ class _Reply:
     suggestion: StateSuggestion | None = None
     timer: TurnTimer | None = None
     first_duration_s: float | None = None  # audio length of sentence 0
+    late: frozenset[str] = frozenset()  # rules the LLM tripwire confirmed while it was in flight
 
 
 @dataclass
@@ -298,6 +316,12 @@ class CallSession:
         self._finalize_deadline: float | None = None  # absolute; when a done reply counts as heard
         self._pending_end: EndReason | None = None  # an ending already decided inside a turn task
         self._hard_deadline: float | None = None  # time cap + grace, whatever the state
+        self._tw: CallTripwire | None = None
+        self._difficulty: Difficulty = "medium"
+        self._lines: list[TranscriptLine] = []  # the judge's transcript (borrower: heard words)
+        self._snapshots: list[StateSnapshot] = []
+        self._reviews: set[asyncio.Task[None]] = set()
+        self._applied: set[str] = set()  # flag ids already passed to the engine
 
     # --- public ---
 
@@ -311,6 +335,9 @@ class CallSession:
             return "bad_start"
         self._persona = persona
         self._voice = voice_for_persona(persona)
+        self._difficulty = start.difficulty
+        if self._deps.tripwire_factory is not None:
+            self._tw = self._deps.tripwire_factory(persona)
         cfg = self._deps.config
         seed = self._deps.seeds()
         engine = BorrowerEngine(
@@ -344,6 +371,7 @@ class CallSession:
             reason = "error"
         finally:
             await self._cancel_turn()
+            await self._cancel_reviews()
             receiver.cancel()
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await receiver
@@ -353,6 +381,10 @@ class CallSession:
 
     async def _judge(self) -> None:
         """05: ending -> judging -> done. A call whose browser left is still judged and saved."""
+        scorer = self._deps.scorer
+        if scorer is not None and self._engine is not None and self._persona is not None:
+            await self._score(scorer, self._engine, self._persona)
+            return
         judge = self._deps.judge
         if judge is None:
             return
@@ -371,6 +403,49 @@ class CallSession:
             log.exception("call %s: could not store the scorecard", self.call_id)
         with contextlib.suppress(TransportClosed, Exception):
             await self._send(ScorecardMsg(scorecard=card))
+
+    async def _score(self, scorer: CallScorer, engine: BorrowerEngine, persona: Persona) -> None:
+        """Judge from what the session knows (engine truth, flag ledger). A failed judge stores
+        and sends the flags with "scoring failed"; there is never an invented score."""
+        s = engine.state
+        flags = list(self._tw.flags) if self._tw is not None else []
+        data = JudgeInput(
+            persona=persona,
+            difficulty=self._difficulty,
+            sim_clock=s.sim_clock,
+            transcript=list(self._lines),
+            traps=s.traps,
+            gate_opened_turn=s.gate_opened_turn,
+            revealed_turn=s.revealed_turn,
+            promise=s.promise,
+            state_history=list(self._snapshots),
+            flags=flags,
+        )
+        card: dict[str, Any] | None = None
+        version = "failed"
+        reason = "judge did not answer"
+        try:
+            run = await asyncio.wait_for(
+                scorer.score(data), timeout=self._deps.config.judge_timeout_s
+            )
+            if run.scorecard is not None:
+                card = run.scorecard.model_dump(mode="json")
+                version = f"judge-v{run.prompt_version}"
+            else:
+                reason = run.error or "no scorecard"
+        except Exception:
+            log.exception("call %s: judging failed", self.call_id)
+        flag_dicts = [f.model_dump(mode="json") for f in flags]
+        stored = card or {"error": "scoring_failed", "reason": reason, "flags": flag_dicts}
+        try:
+            await self._deps.db.save_scorecard(self.call_id, stored, judge_version=version)
+        except Exception:
+            log.exception("call %s: could not store the scorecard", self.call_id)
+        message: ServerMessage = (
+            ScorecardMsg(scorecard=card) if card is not None else ScoringFailed(flags=flag_dicts)
+        )
+        with contextlib.suppress(TransportClosed, Exception):
+            await self._send(message)
 
     async def _create_call_row(
         self, start: StartCall, persona: Persona, engine: BorrowerEngine, seed: int
@@ -620,7 +695,9 @@ class CallSession:
                 now = self._now_abs()
                 heard_count = sum(1 for end in reply.ends if end <= now)
             heard = " ".join(reply.sentences[:heard_count])
-            outcome = engine.end_turn(StateSuggestion(), interrupted=True)
+            outcome = engine.end_turn(
+                StateSuggestion(), interrupted=True, confirmed_violations=reply.late
+            )
             self._min_valid_turn = reply.turn + 1
             self._speaking_until = self._now_abs()
             if send:
@@ -629,8 +706,17 @@ class CallSession:
             await self._tts.reset()  # drop half-finished audio on Timbre's side
         else:
             heard = " ".join(reply.sentences)
-            outcome = engine.end_turn(reply.suggestion or StateSuggestion())
+            outcome = engine.end_turn(
+                reply.suggestion or StateSuggestion(), confirmed_violations=reply.late
+            )
         self._history.append(HistoryTurn(role="borrower", text=heard or EMPTY_HEARD))
+        self._lines.append(
+            TranscriptLine(turn=reply.turn, role="borrower", text=heard or EMPTY_HEARD, t=self._t())
+        )
+        st = outcome.state
+        self._snapshots.append(
+            StateSnapshot(turn=st.turn, mood=st.mood, trust=st.trust, mood_label=st.mood_label)
+        )
         latency: dict[str, float] = {}
         if reply.timer is not None:
             marks = reply.timer.marks()
@@ -692,8 +778,8 @@ class CallSession:
             timer, self._timer = self._timer, None
             if timer is not None:
                 timer.mark("transcript_final")
-            if not text:
-                outcome, end = await self._silence(agent_text="")
+            if not text:  # an empty tap is not a turn: the borrower does not answer nothing
+                await self._send(ErrorMsg(code="not_heard", message="no transcript; say it again"))
                 return
             outcome, end = await self._reply_to(text, timer)
         except _CallOver as over:
@@ -753,15 +839,27 @@ class CallSession:
         persona = self._require_persona()
         t_agent = self._t()
         await self._send(Transcript(role="agent", text=text, t=t_agent))
-        analysis = self._deps.analyzer.analyze(
-            text, engine=engine, segment=self._segment, t=t_agent
-        )
+        turn = engine.upcoming_turn
+        tw, terms = self._tw, self._deps.state_terms
+        if tw is not None and terms is not None:
+            flags = tw.on_segment(text, segment=self._segment, t=t_agent, engine=engine)
+            signals = agent_signals(
+                text, persona, terms, confirmed_violations=tw.confirmed_rules(turn)
+            )
+        else:
+            analysis = self._deps.analyzer.analyze(
+                text, engine=engine, segment=self._segment, t=t_agent
+            )
+            flags, signals = analysis.flags, analysis.signals
+        segment = self._segment
         self._segment += 1
-        for flag in analysis.flags:
+        for flag in flags:
             await self._send(FlagMsg(flag=flag.model_dump(mode="json")))
         await self._store_turn("agent", text, t_agent, t_agent)
+        context = list(self._lines)
+        self._lines.append(TranscriptLine(turn=turn, role="agent", text=text, t=t_agent))
 
-        brief = engine.begin_turn(analysis.signals)
+        brief = engine.begin_turn(signals)
         messages = build_messages(
             self._deps.system_prompt,
             persona,
@@ -778,6 +876,8 @@ class CallSession:
         result: ReplyDone | None = None
         reply = _Reply(turn=brief.turn, t_start=self._t(), timer=timer)
         self._reply = reply
+        if tw is not None:
+            self._start_review(tw, text, segment, t_agent, brief.turn, context, flags)
 
         async def produce() -> None:
             nonlocal result
@@ -841,13 +941,62 @@ class CallSession:
             # 05: one in-character "line kharab hai", then end the call politely.
             self._pending_end = failure  # survives a barge-in over the line below
             self._reply = None
-            engine.end_turn(StateSuggestion())
+            engine.cancel_turn()  # nobody heard this reply: a reveal turn is not a told truth
             await self._play_line("line_trouble", turn=brief.turn, sentence=len(reply.sentences))
             raise _CallOver(failure)
 
         reply.suggestion = result.result.suggestion if result is not None else StateSuggestion()
         reply.done = True  # the conductor finalises it once heard
         return None, None
+
+    def _start_review(
+        self,
+        tw: CallTripwire,
+        text: str,
+        segment: int,
+        t: float,
+        turn: int,
+        context: Sequence[TranscriptLine],
+        flags: Sequence[Flag],
+    ) -> None:
+        async def run() -> None:
+            try:
+                changed = await tw.review(
+                    text, segment=segment, t=t, turn=turn, context=context, lexicon_flags=flags
+                )
+            except Exception:
+                log.exception("call %s: tripwire review failed", self.call_id)
+                return
+            for flag in changed:
+                with contextlib.suppress(TransportClosed):
+                    await self._send(FlagUpdate(flag=flag.model_dump(mode="json")))
+            fresh = {
+                f.rule
+                for f in changed
+                if f.status == "confirmed" and f.id not in self._applied and f.turn == turn
+            }
+            self._applied.update(f.id for f in changed if f.status == "confirmed")
+            if fresh:
+                self._pass_to_engine(turn, frozenset(fresh))
+
+        task = asyncio.create_task(run(), name=f"review-{self.call_id}-{turn}")
+        self._reviews.add(task)
+        task.add_done_callback(self._reviews.discard)
+
+    def _pass_to_engine(self, turn: int, rules: frozenset[str]) -> None:
+        """A late confirmation: into this turn's `end_turn` if the reply is still open,
+        otherwise straight into the state (each rule goes in exactly once)."""
+        reply = self._reply
+        if reply is not None and reply.turn == turn:
+            reply.late |= rules
+        elif self._engine is not None:
+            self._engine.apply_violations(rules)
+
+    async def _cancel_reviews(self) -> None:
+        tasks = list(self._reviews)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _after_turn(self, outcome: TurnOutcome) -> EndReason | None:
         if outcome.call_over is None:

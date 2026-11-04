@@ -244,19 +244,6 @@ async def test_audio_is_ignored_while_talk_is_not_pressed(db: Database) -> None:
     assert bytes(h.stt.audio) == b""
 
 
-async def test_empty_transcript_counts_as_a_silent_turn(db: Database) -> None:
-    h = Harness(db)
-    h.stt.transcripts = [""]
-    h.start()
-    await h.transport.wait_for("audio_end")
-    h.speak()
-    await h.transport.wait_for("audio_end", count=2)
-    h.transport.send_json(type="end_call")
-    await h.finish()
-    assert h.lines.rendered == ["pickup", "silence"]
-    assert h.replies.requests == []
-
-
 async def test_mic_noise_outside_push_to_talk_does_not_reset_the_silence_timer(
     db: Database,
 ) -> None:
@@ -404,3 +391,20 @@ async def test_a_call_whose_browser_left_is_still_judged_and_saved(db: Database)
     h.transport.disconnect()
     assert await h.finish() == "disconnected"
     assert await db.scorecard("call-1") is not None
+
+
+async def test_an_empty_transcript_is_not_heard_and_the_borrower_does_not_reply(
+    db: Database,
+) -> None:
+    h = Harness(db)
+    h.stt.transcripts = ["  "]
+    h.start()
+    await h.transport.wait_for("audio_end")
+    h.speak()
+    await h.transport.wait_for("error")
+    h.transport.send_json(type="end_call")
+    await h.finish()
+
+    assert h.transport.messages("error")[0]["code"] == "not_heard"
+    assert h.replies.requests == []  # no LLM call for an empty tap
+    assert len(h.transport.messages("audio_start")) == 1  # only the pickup line

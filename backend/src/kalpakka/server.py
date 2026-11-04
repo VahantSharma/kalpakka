@@ -18,20 +18,24 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Final
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.responses import JSONResponse
 from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 from kalpakka.admission import Admission, DailyCaps, Lease, LiveHours, Refusal
 from kalpakka.brain import load_prompt
+from kalpakka.call_tripwire import CallTripwire
 from kalpakka.clock import SystemClock
 from kalpakka.config import REPO_ROOT, Settings, parse_live_hours
 from kalpakka.db import Database
 from kalpakka.gnani_stt import PrismaStream, config_for_persona
 from kalpakka.gnani_tts import LINE_TROUBLE, PrerenderCache, TimbreSocket, voice_for_persona
+from kalpakka.judge_runner import JsonSchemaAdapter
 from kalpakka.llm import ChatTemplateThinkingAdapter, LLMClient
+from kalpakka.llm_tripwire import LLMCheck, LLMTripwire
 from kalpakka.personas import Persona, load_personas
 from kalpakka.protocol import Busy, ErrorMsg, encode
+from kalpakka.scorer import JudgeScorer
 from kalpakka.session import (
     CallDeps,
     CallSession,
@@ -42,6 +46,7 @@ from kalpakka.session import (
     TextToSpeech,
     TransportClosed,
 )
+from kalpakka.state_tripwire import load_state_terms
 from kalpakka.tripwire import LexiconTripwire, load_catalogue, load_lexicon
 
 log = logging.getLogger(__name__)
@@ -179,6 +184,19 @@ def create_app(
         found: AppContext = app.state.context
         return found
 
+    @app.middleware("http")
+    async def cors(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """GET routes for the front door on another origin (ALLOWED_ORIGINS); nothing else."""
+        response = await call_next(request)
+        origin = request.headers.get("origin")
+        context = getattr(app.state, "context", None)
+        if request.method == "GET" and origin and context and origin in context.allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+        return response
+
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
         c = ctx()
@@ -201,6 +219,8 @@ def create_app(
         db = ctx().deps.db
         card = await db.scorecard(call_id)
         if card is not None:
+            if card.get("error") == "scoring_failed":  # the flags only; never a made-up score
+                return JSONResponse(card, status_code=424)
             return card
         if await db.call(call_id) is not None:
             return JSONResponse({"status": "judging"}, status_code=202)
@@ -276,6 +296,35 @@ def create_production_app() -> FastAPI:
         catalogue = load_catalogue(CONTENT / "rules" / "catalogue.yaml")
         tripwire = LexiconTripwire(load_lexicon(CONTENT / "rules" / "lexicon.yaml", catalogue))
         llm = LLMClient.from_settings(settings, ChatTemplateThinkingAdapter())
+        base = ChatTemplateThinkingAdapter()
+
+        def llm_with(adapter: JsonSchemaAdapter, timeout_s: float) -> LLMClient:
+            return LLMClient(
+                base_url=settings.llm_base_url,
+                api_key=settings.llm_api_key.get_secret_value(),
+                model=settings.llm_model,
+                adapter=adapter,
+                timeout_s=timeout_s,
+            )
+
+        terms = load_state_terms(CONTENT / "rules" / "state_terms.yaml")
+        check_layer = LLMTripwire(
+            llm_with(JsonSchemaAdapter(base, name="tripwire_check", model=LLMCheck), 30.0),
+            load_prompt(CONTENT / "prompts" / "tripwire-check.md"),
+            catalogue,
+        )
+
+        def new_tripwire(persona: Persona) -> CallTripwire:
+            return CallTripwire(
+                lexicon=tripwire, terms=terms, persona=persona, llm_layer=check_layer
+            )
+
+        scorer = JudgeScorer(
+            llm_with(JsonSchemaAdapter(base), 85.0),
+            load_prompt(CONTENT / "prompts" / "judge-system.md"),
+            catalogue=catalogue,
+            tripwire=tripwire,
+        )
         gnani_key = settings.gnani_api_key.get_secret_value() if settings.gnani_api_key else ""
 
         def open_stt(persona: Persona, call_id: str) -> AbstractAsyncContextManager[SpeechToText]:
@@ -311,6 +360,9 @@ def create_production_app() -> FastAPI:
             seeds=lambda: rng.randrange(1, 2**31),
             config=SessionConfig(sim_date=settings.sim_date, time_cap_s=settings.call_time_cap_s),
             analyzer=LexiconAnalyzer(tripwire),
+            tripwire_factory=new_tripwire,
+            state_terms=terms,
+            scorer=scorer,
         )
         app.state.context = AppContext(
             deps=deps,

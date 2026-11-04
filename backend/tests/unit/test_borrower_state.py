@@ -781,3 +781,23 @@ def test_after_reveal_the_brief_keeps_the_real_means_consistent() -> None:
 
     assert "already told" in brief.text
     assert "₹4,000" in brief.text
+
+
+def test_cancel_turn_undoes_a_reveal_turn_that_was_never_heard() -> None:
+    e = medium(calm_ramesh(starting_trust=60))
+    before = e.state
+
+    brief = e.begin_turn(TurnSignals(asked_open_question=True))
+    assert brief.reveal_now
+    e.cancel_turn()
+
+    assert e.state == before
+    assert not e.state.revealed
+    again = e.begin_turn(TurnSignals(asked_open_question=True))  # the reveal can still happen
+    assert again.reveal_now
+    assert again.turn == 1
+
+
+def test_cancel_turn_without_begin_turn_is_an_error() -> None:
+    with pytest.raises(RuntimeError):
+        engine().cancel_turn()
