@@ -1,0 +1,60 @@
+[project]
+name = "kalpakka"
+version = "0.1.0"
+description = "An AI borrower that loan-recovery agents and collections voice bots practise on."
+authors = [
+    { name = "VahantSharma", email = "vahantofficials12315@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.0",
+    "numpy>=2.5.4",
+    "openai>=3.42.1",
+    "pydantic>=2.14.2",
+    "pydantic-settings>=2.16.2",
+    "pyyaml>=6.0.3",
+    "rapidfuzz>=3.14.6",
+    "uvicorn>=0.54.0",
+    "websockets>=17.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jiwer>=4.0.0",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "ruff>=0.17.3",
+    "types-pyyaml>=6.0.12.20261030",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "ASYNC", "RUF", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kalpakka"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true

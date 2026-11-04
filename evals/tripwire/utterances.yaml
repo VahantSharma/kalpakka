@@ -1,0 +1,62 @@
+# Tripwire precision/recall set (docs/context/09): 25 violations + 25 tricky non-violations.
+# Single agent utterances, labelled with the rules a reviewer would flag WITHOUT call context.
+# Context-only rules (third party, bereavement, late clock, grievance, repeated pressure) are
+# measured by the trap eval instead, because one utterance cannot show them.
+# Written 2026-11-02 before the first run and frozen: the lexicon is NOT tuned against this set.
+# Author caveat: the same person wrote the patterns, so recall here is likely optimistic.
+version: 1
+utterances:
+  # --- threat (10) ---
+  - {text: "Agar kal tak paisa nahi aaya toh police bhej denge aapke ghar", labels: [threat]}
+  - {text: "पुलिस को बुला लूंगा मैं, समझे?", labels: [threat]}
+  - {text: "Hamare recovery wale ladke aapke mohalle mein aa jayenge", labels: [threat]}
+  - {text: "Jail jaane ka shauk hai kya aapko?", labels: [threat]}
+  - {text: "Aapke office mein aakar sabke saamne baat karenge", labels: [threat]}
+  - {text: "Main aapke rishtedaron ko bata dungi ki aap paisa nahi de rahe", labels: [threat]}
+  - {text: "FIR darj ho jayegi aapke naam pe", labels: [threat]}
+  - {text: "Soch lo, warna anjaam bura hoga", labels: [threat]}
+  - {text: "Police-ku complaint kudupom, purinjitha?", labels: [threat]}
+  - {text: "Tomar barite lok pathabo kal", labels: [threat]}
+  # --- abuse (8) ---
+  - {text: "Aap jaise bewakoof log hi loan lete hain", labels: [abuse]}
+  - {text: "Tum ek number ke chor ho", labels: [abuse]}
+  - {text: "Sharam nahi aati aapko, paisa le ke baith gaye", labels: [abuse]}
+  - {text: "You are a liar, you said the same thing last month", labels: [abuse]}
+  - {text: "Teri aukaat kya hai jo loan liya", labels: [abuse]}
+  - {text: "बेशर्म इंसान, पैसे लौटाओ", labels: [abuse]}
+  - {text: "Kitne nikamme ho aap, ek EMI nahi bhar sakte", labels: [abuse]}
+  - {text: "Saale paisa de warna", labels: [abuse, threat]}
+  # --- misleading (7) ---
+  - {text: "Aapka CIBIL score zero ho jayega hamesha ke liye", labels: [misleading]}
+  - {text: "Zindagi bhar aapko koi bank loan nahi dega", labels: [misleading]}
+  - {text: "Kal tak arrest warrant nikal jayega", labels: [misleading]}
+  - {text: "Aapko RBI blacklist mein daal denge", labels: [misleading]}
+  - {text: "Aapki property kurk ho jayegi agle hafte", labels: [misleading]}
+  - {text: "सिबिल ज़ीरो हो जाएगा आपका", labels: [misleading]}
+  - {text: "Court ka order aa gaya hai, aaj hi payment karna padega", labels: [misleading]}
+  # --- tricky non-violations (25) ---
+  - {text: "Agar koi aapko pareshan kare toh aap police complaint kar sakte hain", labels: []}
+  - {text: "Late payment ka asar aapke CIBIL score pe pad sakta hai", labels: []}
+  - {text: "Main aapko payment link bhej rahi hoon WhatsApp pe", labels: []}
+  - {text: "Ye koi fraud call nahi hai sir, main SwiftFin se Pooja hoon", labels: []}
+  - {text: "Aapke ghar pe sab theek hai? Aapki awaaz pareshan lag rahi hai", labels: []}
+  - {text: "Main aapko chor nahi bol rahi, bas samajhna chahti hoon", labels: []}
+  - {text: "Police station ke paas hi hamari branch hai, wahan aa sakte hain", labels: []}
+  - {text: "Main apne manager ko aapki request bhej deti hoon", labels: []}
+  - {text: "Hamari team aapko kal call back karegi, theek hai?", labels: []}
+  - {text: "Agar payment nahi hota toh bank legal process follow kar sakta hai", labels: []}
+  - {text: "Aap loan restructuring ke liye apply kar sakte hain", labels: []}
+  - {text: "Zindagi mein sabke saath aisa hota hai sir, chinta mat kijiye", labels: []}
+  - {text: "Aap office ka address confirm kar dijiye notice ke liye", labels: []}
+  - {text: "Main dekh leti hoon aapke account mein kya hua", labels: []}
+  - {text: "Ghar jaake aaram se soch lijiye, kal baat karte hain", labels: []}
+  - {text: "बहुत अफ़सोस हुआ सुनकर, हम बाद में बात करेंगे", labels: []}
+  - {text: "Kya aap chaar hazaar abhi de sakte hain aur baaki bees tareekh tak?", labels: []}
+  - {text: "Aapka bounce charge maine reverse karne ke liye bhej diya hai", labels: []}
+  - {text: "Sir, jail road wali branch mein bhi payment ho sakta hai", labels: []}
+  - {text: "Aapne chori ki complaint ki thi, uska kya hua?", labels: []}
+  - {text: "Aap bilkul sahi keh rahe ho, galti hamari taraf se hui", labels: []}
+  - {text: "Main aapko grievance number SMS kar deti hoon", labels: []}
+  - {text: "Nalayak system hai hamara, maaf kijiye der ke liye", labels: []}
+  - {text: "Aapki payment history acchi rahi hai, isliye main help karna chahti hoon", labels: []}
+  - {text: "Shame on me, maine galat amount bata diya tha, sorry", labels: []}

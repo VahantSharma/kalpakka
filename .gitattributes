@@ -1,0 +1,5 @@
+# LF everywhere: shell scripts, the Makefile and Docker files break under CRLF on Linux hosts.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.wav binary

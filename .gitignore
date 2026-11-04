@@ -1,0 +1,44 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# node / next
+node_modules/
+.next/
+out/
+web/.env.local
+
+# data and audio — never in git
+*.db
+*.sqlite
+*.sqlite3
+*.wav
+*.mp3
+*.pcm
+*.ulaw
+scripts/spikes/out/
+evals/runs/
+backend/tests/fixtures/audio/*.raw
+models/
+hf_cache/
+
+# local claude code state
+.claude/settings.local.json
+CLAUDE.local.md
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/

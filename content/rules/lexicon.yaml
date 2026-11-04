@@ -1,0 +1,74 @@
+# Layer-1 tripwire patterns (docs/context/07). Compiled once, case-insensitive, Unicode-aware.
+# A hit is only "possible": the background LLM layer confirms or withdraws it with context.
+#
+# `{b}` is a word boundary that understands Indic scripts. Python's \b breaks inside Devanagari,
+# Bengali and Tamil words because their vowel signs are not "word" characters, so never use \b.
+#
+# Every PATTERN has its own `positive` examples (each must match this pattern) and tricky
+# `negative` near-misses (none may raise this rule). Unit tests run all of them.
+# Coverage today: Hinglish (Latin + Devanagari) and English, a few Tanglish/Benglish forms.
+# Tamil and Bengali script coverage is extended with the Lakshmi and Debu personas (P4.1).
+version: 2
+rules:
+  threat:
+    patterns:
+      - pattern: '{b}(police|polis|पुलिस|পুলিশ|போலீஸ்)\s*(ko\s*|को\s*)?(bhej|भेज|bula|बुला|aayegi|आएगी|aa\s*jayegi|aa\s*jaegi|le\s*jayegi|pathabo|pathiye|পাঠাবো|varuvanga)'
+        positive: ["police bhej dunga aapke ghar", "पुलिस भेज दूंगा", "Police pathabo, bujhecho?"]
+        negative: ["aap police complaint kar sakte hain agar koi pareshan kare"]
+      - pattern: '{b}(police|polis|पुलिस)\s*(mein\s*|में\s*|me\s*)?(complaint|case|शिकायत|kes)\s*(kar|कर)\s*(dunga|dungi|denge|दूंगा|दूंगी|देंगे|rahe\s*hain|रहे\s*हैं)'
+        positive: ["main police mein complaint kar dunga"]
+        negative: ["police mein complaint karna aapka haq hai"]
+      - pattern: '{b}(fir|f\.i\.r\.?|एफआईआर|एफ\.आई\.आर)\s*(karwa|karva|करवा|kar\s*denge|kar\s*dunga|darj|दर्ज|ho\s*jayegi|hogi|होगी)'
+        positive: ["FIR karwa denge aaj hi"]
+        negative: ["first payment confirm ho gaya hai"]
+      - pattern: '{b}(jail|jel|जेल)\s*(bhej|भेज|ho\s*(jayegi|jaegi|jaayegi)|hogi|होगी|हो\s*जाएगी|daal|डाल|mein\s*daal|jaoge|jaaoge|जाओगे)'
+        positive: ["jail ho jayegi aapko"]
+        negative: ["jail road wali branch mein payment ho sakta hai"]
+      - pattern: '{b}(log|aadmi|ladke|bande|banda|team|recovery\s*agent|लोग|आदमी|लड़के|टीम)\s*(ko\s*)?(bhej|भेज)\w*'
+        positive: ["hamare log bhejenge aapke paas"]
+        negative: ["main aapko payment link bhej deti hoon"]
+      - pattern: '{b}(ghar|घर|office|ऑफिस|daftar|दफ्तर|veedu|veettu|bari)\s*(pe|par|पर|tak|तक|ku)?\s*(aa\s*jayenge|aa\s*jaenge|aayenge|आ\s*जाएंगे|आएंगे|pahunch\s*jayenge|पहुंच\s*जाएंगे|varuvom|jabo)'
+        positive: ["kal ghar pe aa jayenge hum"]
+        negative: ["ghar pe sab theek hai?"]
+      - pattern: '{b}(padosi|padosiyon|पड़ोसी|पड़ोसियों|rishtedar|rishtedaron|रिश्तेदार|mohalle|मोहल्ले|boss|employer)\w*\s*(ko|को|se|से)\s*(bata|बता|bol|बोल)\w*'
+        positive: ["aapke padosiyon ko bata denge"]
+        negative: ["padosi ne bataya ki aap bahar gaye hain"]
+      - pattern: '{b}(dekh\s*(lunga|loonga|lenge|lungi)|देख\s*(लूंगा|लेंगे|लूंगी))'
+        positive: ["main aapko dekh lunga"]
+        negative: ["main dekh leti hoon aapka account"]
+
+  abuse:
+    patterns:
+      - pattern: '{b}(kamina|kamine|kaminey|haramkhor|haraamkhor|saala|saale|saali|kutta|kutte|kuttey|harami|कमीना|कमीने|हरामखोर|साला|साले|कुत्ता|कुत्ते|हरामी|শালা|হারামি){b}'
+        positive: ["साले पैसे दे", "तू साला। पैसे दे"]
+        negative: ["saalana interest kitna hai?"]
+      - pattern: '{b}(aap|tum|tu|आप|तुम|तू)\s*((to|toh|ek|bilkul|bahut|तो|एक|बिल्कुल)\s*){0,2}(bewakoof|bevkoof|bewkoof|gadhe|gadha|ullu|chor|beimaan|nikamme|nikamma|nalayak|besharam|fraud|liar|idiot|stupid|loser|बेवकूफ|गधे|गधा|उल्लू|चोर|बेईमान|निकम्मे|नालायक|बेशर्म){b}(?=\s*(ho|hai|hain|nikle|हो|है|हैं|निकले){b}|\s*[,.!?।]|\s*$)'
+        positive: ["aap to bilkul bewakoof ho", "tum chor ho, paisa khaa gaye", "तुम बेशर्म हो"]
+        negative: ["main aapko chor nahi bol rahi", "aap fraud calls se savdhan rahein"]
+      - pattern: '{b}(you\s*(are\s*)?(an?\s*)?|you.re\s*(an?\s*)?)(idiot|stupid|shameless|liar|loser|fraud|useless){b}'
+        positive: ["you are a liar, sir"]
+        negative: ["you are not a fraud, I know, there was a bank error"]
+      - pattern: '{b}(sharam\s*nahi\s*aati|शर्म\s*नहीं\s*आती|shame\s*on\s*you)'
+        positive: ["aapko sharam nahi aati?"]
+        negative: ["shame on me, maine galat amount bataya"]
+
+  misleading:
+    patterns:
+      - pattern: '{b}(cibil|सिबिल)\s*(score\s*|स्कोर\s*)?(zero|0|khatam|khatm|ख़त्म|खत्म|block|blacklist|ज़ीरो|जीरो)'
+        positive: ["aapka CIBIL zero ho jayega forever", "सिबिल स्कोर ख़त्म हो जाएगा"]
+        negative: ["late payment se CIBIL score pe asar pad sakta hai"]
+      - pattern: '{b}(kabhi|zindagi\s*bhar|life\s*mein|lifetime|कभी|ज़िंदगी\s*भर|जिंदगी\s*भर).{0,25}(loan|लोन)\s*(nahi|नहीं)\s*(milega|मिलेगा)'
+        positive: ["zindagi bhar koi loan nahi milega aapko"]
+        negative: ["zindagi mein sabke saath aisa hota hai sir"]
+      - pattern: '{b}(arrest|giraftaar|giraftar|गिरफ्तार|गिरफ़्तार)\w*'
+        positive: ["aapko arrest kar lenge"]
+        negative: ["aap restructuring ke liye apply kar sakte hain"]
+      - pattern: '{b}(warrant|वारंट)\s*(nikal|निकल|jaari|जारी|aa|आ)'
+        positive: ["warrant nikal jayega kal tak"]
+        negative: ["warranty card bhi bhej dijiye gaadi ka"]
+      - pattern: '{b}(blacklist|black\s*list|ब्लैकलिस्ट)\w*'
+        positive: ["aapko blacklist kar denge"]
+        negative: ["black colour ki scooty hai na aapki?"]
+      - pattern: '{b}(ghar|घर|property|zameen|jameen|ज़मीन|जमीन)\s*(zabt|jabt|seize|kurk|कुर्क|जब्त|ज़ब्त)'
+        positive: ["ghar zabt ho jayega aapka"]
+        negative: ["ghar ka kiraya bhi dena hota hai, samajh sakti hoon"]
