@@ -1,0 +1,20 @@
+.wrap { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.card {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1.91 / 1;
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #0f6e5c, #12352e);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brand { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+.score { font-size: 2.6rem; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.title { font-weight: 600; }
+.facts { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.85rem; }
+.facts li { background: rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 1px 9px; }
+.ai { margin-top: auto; font-size: 0.72rem; opacity: 0.75; }
+.btn { min-height: 44px; border-radius: 10px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 600; padding: 0 16px; }

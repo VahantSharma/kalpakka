@@ -1,0 +1,41 @@
+.card { display: flex; flex-direction: column; gap: 14px; }
+.head h1 { margin: 4px 0; font-size: 1.35rem; }
+.total { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.total strong { font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.total span { color: var(--muted); font-size: 1.1rem; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+.section, .better { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.section h2, .better h2 { margin: 0 0 8px; font-size: 1.05rem; display: flex; justify-content: space-between; gap: 8px; }
+.secScore { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 500; }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item { border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.got { border-left-color: var(--accent); }
+.missed { border-left-color: var(--line); }
+.lost { border-left-color: var(--red); }
+.itemHead { display: flex; justify-content: space-between; gap: 10px; font-size: 0.95rem; }
+.pts { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.why { color: var(--muted); font-size: 0.82rem; }
+.quote { margin: 4px 0 0; font-size: 0.9rem; color: var(--fg); }
+.unverified { color: var(--muted); text-decoration: line-through; }
+.at { display: inline-block; min-width: 2.6em; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.8rem; margin-right: 4px; }
+.clean { margin: 0; color: var(--accent); font-weight: 600; }
+.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; }
+.timeline li { display: flex; gap: 6px; padding: 6px 8px; border-radius: 8px; }
+.amber { background: var(--amber-bg); }
+.red { background: var(--red-bg); }
+.faded { opacity: 0.6; }
+.status { font-style: normal; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.note { color: var(--muted); font-size: 0.82rem; font-style: italic; }
+.said { margin: 0 0 6px; color: var(--muted); }
+.betterText { margin: 0 0 10px; font-size: 1.02rem; font-weight: 550; }
+.better { border-color: var(--accent); }
+.play {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0 16px;
+}
+.foot { color: var(--muted); font-size: 0.8rem; margin: 0; }
