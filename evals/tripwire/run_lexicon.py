@@ -1,7 +1,8 @@
 """Tripwire eval, lexicon layer alone: precision and recall on evals/tripwire/utterances.yaml.
 
-Run from backend/:  uv run --frozen --offline python ../evals/tripwire/run_lexicon.py
-(or `make eval-tripwire` from the repo root). Prints a summary and writes the full result,
+Run from backend/:  uv run --frozen --offline python ../evals/tripwire/run_lexicon.py [set.yaml]
+(or `make eval-tripwire` from the repo root). Default set: the frozen Hinglish utterances.yaml;
+`utterances-ta-bn.yaml` is the Tanglish/Benglish set (P4.1). Prints a summary and writes the full result,
 with lexicon and set versions, to evals/runs/ (git-ignored; paste the summary into the log).
 """
 
@@ -35,7 +36,8 @@ def main() -> int:
     catalogue = load_catalogue(ROOT / "content/rules/catalogue.yaml")
     lexicon = load_lexicon(ROOT / "content/rules/lexicon.yaml", catalogue)
     tripwire = LexiconTripwire(lexicon)
-    data = yaml.safe_load((ROOT / "evals/tripwire/utterances.yaml").read_text(encoding="utf-8"))
+    set_name = sys.argv[1] if len(sys.argv) > 1 else "utterances.yaml"
+    data = yaml.safe_load((ROOT / "evals/tripwire" / set_name).read_text(encoding="utf-8"))
 
     rows = []
     expected: list[set[str]] = []
@@ -59,7 +61,7 @@ def main() -> int:
     now = dt.datetime.now(IST)
     print(
         f"tripwire lexicon eval · {now:%Y-%m-%d %H:%M} IST · lexicon v{lexicon.version} · "
-        f"set v{data['version']} · n={len(rows)}"
+        f"set {set_name} v{data['version']} · n={len(rows)}"
     )
     print(line("utterance", report.overall))
     for rule, counts in report.per_rule.items():
@@ -71,13 +73,14 @@ def main() -> int:
 
     out_dir = ROOT / "evals/runs"
     out_dir.mkdir(exist_ok=True)
-    out = out_dir / f"tripwire-lexicon-{now:%Y%m%d-%H%M%S}.json"
+    out = out_dir / f"tripwire-lexicon-{Path(set_name).stem}-{now:%Y%m%d-%H%M%S}.json"
     out.write_text(
         json.dumps(
             {
                 "run_at": now.isoformat(),
                 "layer": "lexicon",
                 "lexicon_version": lexicon.version,
+                "set": set_name,
                 "set_version": data["version"],
                 "overall": report.overall.model_dump(),
                 "per_rule": {k: v.model_dump() for k, v in report.per_rule.items()},

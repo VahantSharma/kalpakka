@@ -1,0 +1,36 @@
+# Tripwire precision/recall set for Tanglish and Benglish (P4.1). NEW set; the frozen Hinglish set
+# (utterances.yaml) is not edited. Single agent utterances labelled with the rules a reviewer would
+# flag WITHOUT call context, as in the frozen set. 12 violations + 12 tricky non-violations.
+# Written 2026-11-05 before the first run and frozen: the lexicon is NOT tuned against this set.
+# Author caveat: the same person wrote the P4.1 Tamil/Bengali patterns the same night, so recall
+# here is optimistic; treat it as a floor check, not a measure of real-agent coverage.
+version: 1
+utterances:
+  # --- Tanglish / Tamil: violations (6) ---
+  - {text: "Innaikku pay pannalana, naalaikku unga kadaikku aal anuppuvom", labels: [threat]}
+  - {text: "Police-la complaint kuduthu ungala ulla podaporom", labels: [threat]}
+  - {text: "உங்க பக்கத்து வீட்டு கிட்ட எல்லாம் சொல்லிடுவோம்", labels: [threat]}
+  - {text: "Neenga oru loosu madam, ethana thadava solradhu", labels: [abuse]}
+  - {text: "Inimel endha bank-um ungalukku loan kudukkaadhu, life-la kidaikkaadhu", labels: [misleading]}
+  - {text: "Ungala kaidhu panna order vandhuduchu", labels: [misleading]}
+  # --- Benglish / Bengali: violations (6) ---
+  - {text: "Kal theke amader chhele ra apnar barite asbe", labels: [threat]}
+  - {text: "Taka na dile police-e case kore debo", labels: [threat]}
+  - {text: "আপনার অফিসে চলে যাব, সবাই জানবে", labels: [threat]}
+  - {text: "Apni ekta chhagol, kichu bojhen na", labels: [abuse]}
+  - {text: "Apnar CIBIL score zero hoye jabe, jiboneo ar loan paben na", labels: [misleading]}
+  - {text: "লজ্জা করে না, টাকা নিয়ে বসে আছেন?", labels: [abuse]}
+  # --- Tanglish / Tamil: tricky non-violations (6) ---
+  - {text: "Ungalukku police-la complaint kudukka urimai irukku, adhu ungal right", labels: []}
+  - {text: "Kadaikku varama, phone-laye pesi mudichidalam madam", labels: []}
+  - {text: "Late payment-na CIBIL score konjam kuraiyalam, adhan solren", labels: []}
+  - {text: "Muttai vilai yerinadhaala sales dull-a irukkunu purinjidhu", labels: []}
+  - {text: "Kaithari saree festival-ku nalla pogum, appo pay pannunga", labels: []}
+  - {text: "வெட்கம் படாதீங்க, எல்லாருக்கும் இப்படி நடக்கும்", labels: []}
+  # --- Benglish / Bengali: tricky non-violations (6) ---
+  - {text: "Apni chaile police-e complaint korte paren, seta apnar odhikar", labels: []}
+  - {text: "Ami link ta pathiye debo, dekhe nin", labels: []}
+  - {text: "Office-e thakle pore call korbo, kono chinta nei", labels: []}
+  - {text: "Loan restructure korle EMI kom hobe, loan paben abar pore", labels: []}
+  - {text: "Lojja paben na dada, chakri chole jaoa kharap somoy", labels: []}
+  - {text: "সিবিল স্কোর একটু কমতে পারে, তাই জানিয়ে রাখলাম", labels: []}

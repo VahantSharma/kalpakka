@@ -241,3 +241,11 @@ def test_insult_word_inside_a_longer_word_is_not_abuse(
     tripwire: LexiconTripwire, text: str
 ) -> None:
     assert "abuse" not in rules_in(tripwire, text)
+
+
+def test_bengali_nukta_letters_match_whatever_form_the_pattern_uses() -> None:
+    # U+09DF (য়) and U+09DC (ড়) are NFC composition exclusions: NFC text holds the decomposed
+    # pair, so a pattern typed with the precomposed letter must be normalised too.
+    composed = "বকেয়া"  # বকেয়া as typed on most keyboards
+    pattern = compile_pattern("{b}" + composed)
+    assert pattern.search(normalise("আপনার " + composed + " টাকা"))

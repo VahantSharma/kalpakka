@@ -12,6 +12,7 @@ from kalpakka.judge import (
     JudgeViolation,
     TranscriptLine,
     WorstLine,
+    find_quote,
     score_call,
     verify_quote,
 )
@@ -492,3 +493,81 @@ def test_judge_violation_over_a_withdrawn_flag_is_marked_as_overriding_it() -> N
     occurrence = card.compliance.deductions[0].occurrences[0]
     assert occurrence.source == "judge"
     assert occurrence.overrides_withdrawn_flag
+
+
+# --- a quote across two segments of one turn (P3.3 known gap) ---
+
+SPLIT = [
+    TranscriptLine(turn=4, role="agent", text="Ramesh ji main samajh sakti hoon,", t=20.0),
+    TranscriptLine(turn=4, role="agent", text="aap 4000 abhi aur baaki bees tak de dijiye", t=22.5),
+    TranscriptLine(turn=4, role="borrower", text="Theek hai madam.", t=25.0),
+    TranscriptLine(turn=5, role="agent", text="dhanyavaad Ramesh ji", t=30.0),
+]
+
+
+def test_a_quote_spanning_two_segments_of_one_turn_verifies() -> None:
+    quote = Evidence(turn=4, quote="main samajh sakti hoon, aap 4000 abhi")
+    line = find_quote(quote, SPLIT, speaker="agent")
+    assert line is not None
+    assert line.t == 20.0  # the time of the turn's first segment
+    assert "samajh" in line.text and "4000" in line.text
+
+
+def test_a_quote_spanning_two_turns_does_not_verify() -> None:
+    quote = Evidence(turn=4, quote="bees tak de dijiye dhanyavaad Ramesh ji")
+    assert find_quote(quote, SPLIT, speaker="agent") is None
+
+
+def test_a_quote_spanning_agent_and_borrower_does_not_verify() -> None:
+    quote = Evidence(turn=4, quote="baaki bees tak de dijiye theek hai madam")
+    assert find_quote(quote, SPLIT, speaker="agent") is None
+    assert find_quote(quote, SPLIT, speaker=None) is None
+
+
+def test_a_long_quote_is_not_proved_by_a_short_line_inside_it() -> None:
+    """Fuzzy partial matching scores a short line found inside a padded quote as 100."""
+    transcript = [TranscriptLine(turn=2, role="agent", text="Aapki EMI baki hai ji", t=5.0)]
+    padded = Evidence(turn=2, quote="aapki EMI baki hai ji, main aapki poori madad karungi")
+    assert find_quote(padded, transcript, speaker="agent") is None
+
+
+# --- trap-rule violations must fall in the engine's window (07 safeguard 6) ---
+
+WINDOW_LINES = [
+    TranscriptLine(turn=2, role="agent", text="Aapki EMI kab tak bharenge aap", t=5.0),
+    TranscriptLine(turn=5, role="agent", text="Afsos hua par EMI kab tak bharenge aap", t=20.0),
+]
+
+
+def _window_card(rule: str, turn: int, windows: dict[str, list[tuple[int, int | None]]]) -> object:
+    catalogue = load_catalogue(RULES / "catalogue.yaml")
+    lexicon = LexiconTripwire(load_lexicon(RULES / "lexicon.yaml", catalogue))
+    text = next(line.text for line in WINDOW_LINES if line.turn == turn)
+    judge = JudgeOutput(
+        checks=[],
+        violations=[JudgeViolation(rule=rule, turn=turn, quote=text)],  # type: ignore[arg-type]
+    )
+    facts = CallFacts(promise_valid=False, promise_turn=None, revealed_turn=None,
+                      rule_windows=windows)  # fmt: skip
+    return score_call(judge, WINDOW_LINES, facts, [], catalogue, lexicon).compliance
+
+
+def test_a_trap_violation_inside_its_window_is_deducted() -> None:
+    compliance = _window_card("bereavement_pressure", 5, {"bereavement_pressure": [(5, 6)]})
+    assert [d.rule for d in compliance.deductions] == ["bereavement_pressure"]  # type: ignore[attr-defined]
+
+
+def test_a_trap_violation_outside_its_window_is_not_deducted() -> None:
+    compliance = _window_card("bereavement_pressure", 2, {"bereavement_pressure": [(5, 6)]})
+    assert compliance.deductions == []  # type: ignore[attr-defined]
+    assert [v.turn for v in compliance.out_of_window] == [2]  # type: ignore[attr-defined]
+
+
+def test_a_trap_rule_with_no_trap_in_the_call_is_not_deducted() -> None:
+    compliance = _window_card("third_party_disclosure", 5, {"third_party_disclosure": []})
+    assert compliance.deductions == []  # type: ignore[attr-defined]
+
+
+def test_a_rule_without_a_window_entry_is_unconstrained() -> None:
+    compliance = _window_card("repeated_pressure", 2, {})
+    assert [d.rule for d in compliance.deductions] == ["repeated_pressure"]  # type: ignore[attr-defined]

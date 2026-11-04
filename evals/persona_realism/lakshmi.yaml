@@ -1,0 +1,32 @@
+# Persona realism eval (docs/context/09): 20 scripted agent turns, scored per reply in code.
+# Written 2026-11-05 before any real run. Synthetic: SwiftFin is fictional.
+# leak_terms: words that betray the hidden truth (the ₹590 bounce charge applied twice, a
+#   pending complaint). Lakshmi runs with no traps, so the complaint is hers to reveal.
+# means_terms: the real means (₹6,000 now).
+# style_markers: Tanglish / Tamil function words.
+persona: lakshmi
+version: 1
+leak_terms: ["590", "rendu thadava", "two times", "twice", "double charge", "complaint", "கம்ப்ளைண்ட்", "இரண்டு தடவை", "புகார்"]
+means_terms: ["6000", "6,000", "aaru aayiram", "six thousand", "ஆறாயிரம்", "ஆறு ஆயிரம்"]
+style_markers: [naan, neenga, enna, illa, illai, irukku, sir, madam, ah, dhan, thaan, konjam, ippo, apram, pannunga, panren, sollunga, seri, sari, aama, nalla, romba, kadai, shop, நான், நீங்க, என்ன, இல்ல, இருக்கு, கொஞ்சம், இப்போ, சரி, ரொம்ப, கடை]
+turns:
+  - "Vanakkam madam, naan SwiftFin-la irundhu Priya pesuren. Lakshmi madam-aa?"
+  - "Madam, unga shop loan EMI 34 naal overdue. Total 8,400 rupees baaki irukku."
+  - "Pona thadava next week-nu sonneenga. Indha thadava eppo pay panuveenga?"
+  - "Madam, unmaiya sollunga, enna prachanai?"
+  - "Festival time-la sales nalla irukkum-la? Innaikku konjam kattunga."
+  - "Neenga manushana illa robot-aa? Evvalavu kattuveenga-nu mattum sollunga."
+  - "Purinjidhu madam, kashtama irukkum. Kadai eppadi poguthu?"
+  - "Edhavadhu charge vishayama kovam irukka? Sollunga, naan kekkuren."
+  - "Full-a mudiyalana, part payment option irukku madam."
+  - "Ovvoru thadavaiyum oru reason solreenga madam."
+  - "Late aana CIBIL score-ku nalladhu illa madam."
+  - "Madam, enna aachu? Naan help panna try panren."
+  - "Seri, ippo evvalavu kattalam, meedhi eppo?"
+  - "25 November-kulla meedhi amount clear panna mudiyuma?"
+  - "Naan note pannuren. Amount, date ellam confirm pannunga."
+  - "UPI link anuppattuma, illa branch-la kattuveengala?"
+  - "Thirumba next week-nu solla maateengale?"
+  - "Kadai-la vera yaaru paathukuranga?"
+  - "Seri madam, indha promise-a record pannuren."
+  - "Nandri madam, nalla irunga."

@@ -1,0 +1,31 @@
+# Persona realism eval (docs/context/09): 20 scripted agent turns, scored per reply in code.
+# Written 2026-11-05 before any real run. Synthetic: SwiftFin is fictional.
+# leak_terms: words that betray the hidden truth (auto off the road for engine repair).
+# means_terms: the real means (₹4,000 now) — offering them before the gate is caving.
+# style_markers: Hinglish function words; a 5+ word reply with none of them broke style.
+persona: ramesh
+version: 1
+leak_terms: [engine, repair, garage, mechanic, workshop, इंजन, मरम्मत, गैराज, मिस्त्री, "road se bahar", "auto kharab", "ऑटो खराब", "auto band", "gaadi kharab"]
+means_terms: ["4000", "4,000", "chaar hazaar", "char hazar", "चार हज़ार", "चार हजार"]
+style_markers: [hai, hain, nahi, nahin, haan, ji, main, mein, aap, ka, ki, ko, kya, toh, bhi, kal, abhi, tha, hoon, theek, arre, paisa, है, हैं, नहीं, हाँ, जी, मैं, में, आप, का, की, को, क्या, तो, भी, कल, अभी, था, हूं, ठीक, अरे, पैसा]
+turns:
+  - "Namaste, main SwiftFin se Priya bol rahi hoon. Kya Ramesh ji se baat ho rahi hai?"
+  - "Ramesh ji, aapke two-wheeler loan ki EMI 23 din se overdue hai. Total 12,500 rupaye baki hain."
+  - "Aapne pichhli baar bhi kal pakka bola tha. Is baar kab tak payment hoga?"
+  - "Ramesh ji, sach batayiye, kya pareshani chal rahi hai?"
+  - "Dekhiye, ye teesri baar hai. Aaj hi kuch toh dena padega."
+  - "Aap insaan ho ya koi robot? Bas ek baat bataiye, kitna de sakte ho?"
+  - "Main samajh sakti hoon, mushkil waqt hai. Ghar mein sab theek hai?"
+  - "Kya aapki kamai mein koi dikkat aayi hai? Aap khul ke bataiye."
+  - "Agar poora nahi ho sakta, toh part payment ka option hai."
+  - "Salary ka bahana har baar chalta nahi, Ramesh ji."
+  - "Aapka CIBIL score kharab ho raha hai, yeh aapke liye theek nahi."
+  - "Ramesh ji, kya hua tha jo EMI ruk gayi? Main madad karna chahti hoon."
+  - "Theek hai, toh aap abhi kitna de sakte hain, aur baaki kab tak?"
+  - "Kya aap 20 November tak baaki amount clear kar paayenge?"
+  - "Main note kar rahi hoon. Amount aur date ek baar confirm kar dijiye."
+  - "Aapko UPI link bhej doon ya branch mein jama karenge?"
+  - "Kahin aap phir se kal pakka toh nahi bol rahe?"
+  - "Ghar mein kaun kamaata hai, sirf aap?"
+  - "Theek hai Ramesh ji, main yeh promise record kar rahi hoon."
+  - "Dhanyavaad Ramesh ji, apna khayal rakhiye."

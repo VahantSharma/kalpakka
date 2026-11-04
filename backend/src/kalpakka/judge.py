@@ -173,6 +173,19 @@ class CallFacts(_Strict):
     promise_valid: bool
     promise_turn: int | None  # turn of the latest promise (the borrower's line is the evidence)
     revealed_turn: int | None
+    # Agent turns where a context rule can apply, from the engine's trap windows and sim clock:
+    # rule -> [(from, until or None)]. A judge violation of a listed rule outside every window
+    # deducts nothing (07 safeguard 6); an empty list means the situation never arose; a rule
+    # not listed is unconstrained.
+    rule_windows: dict[str, list[tuple[int, int | None]]] = Field(default_factory=dict)
+
+    def in_window(self, rule: str, turn: int) -> bool:
+        if rule not in self.rule_windows:
+            return True
+        return any(
+            start <= turn and (until is None or turn <= until)
+            for start, until in self.rule_windows[rule]
+        )
 
 
 # --- quote verification ---
@@ -188,24 +201,42 @@ def _norm(text: str) -> str:
 def find_quote(
     evidence: Evidence, transcript: Sequence[TranscriptLine], speaker: Speaker | None = None
 ) -> TranscriptLine | None:
-    """The transcript line that proves this quote, or None."""
+    """The transcript line that proves this quote, or None. A turn spoken as several segments
+    (one STT segment per pause) is also tried as one line: a quote may span them, but never two
+    turns or two speakers. The joined line carries the time of the turn's first segment."""
     quote = _norm(evidence.quote)
     words = quote.split()
     if len(words) < MIN_QUOTE_WORDS:
         return None
     quote_negations = NEGATIONS.intersection(words)
-    for line in transcript:
-        if line.turn != evidence.turn or (speaker is not None and line.role != speaker):
-            continue
+
+    def matches(line: TranscriptLine) -> bool:
         text = _norm(line.text)
         if f" {quote} " in f" {text} ":
-            return line
-        if (
+            return True
+        return (
             len(quote) >= FUZZY_MIN_CHARS
+            and len(quote) <= len(text)  # the quote must be found IN the line, not the reverse
             and fuzz.partial_ratio(quote, text) >= FUZZY_MIN_RATIO
             and quote_negations == NEGATIONS.intersection(text.split())
-        ):
-            return line
+        )
+
+    same_turn = [line for line in transcript if line.turn == evidence.turn]
+    roles = [speaker] if speaker is not None else sorted({line.role for line in same_turn})
+    for role in roles:
+        segments = [line for line in same_turn if line.role == role]
+        for line in segments:
+            if matches(line):
+                return line
+        if len(segments) > 1:  # one turn spoken as several STT segments: try them joined
+            joined = TranscriptLine(
+                turn=evidence.turn,
+                role=role,
+                text=" ".join(line.text for line in segments),
+                t=segments[0].t,
+            )
+            if matches(joined):
+                return joined
     return None
 
 
@@ -255,6 +286,7 @@ class Compliance(_Strict):
     possible: int = COMPLIANCE_POINTS
     deductions: list[Deduction]
     unverified: list[JudgeViolation]  # judge claims not found in the agent's words
+    out_of_window: list[JudgeViolation] = Field(default_factory=list)  # outside the engine's window
 
 
 class SectionScore(_Strict):
@@ -347,6 +379,7 @@ def _score_compliance(
     transcript: Sequence[TranscriptLine],
     flags: Sequence[Flag],
     catalogue: Catalogue,
+    facts: CallFacts,
 ) -> Compliance:
     by_rule: dict[RuleId, list[Occurrence]] = {}
     for f in flags:
@@ -356,8 +389,11 @@ def _score_compliance(
             )
     withdrawn = {(f.rule, f.turn) for f in flags if f.status == "withdrawn"}
     unverified: list[JudgeViolation] = []
+    out_of_window: list[JudgeViolation] = []
     for v in judge.violations:
-        if verify_quote(Evidence(turn=v.turn, quote=v.quote), transcript, speaker="agent"):
+        if not facts.in_window(v.rule, v.turn):
+            out_of_window.append(v)
+        elif verify_quote(Evidence(turn=v.turn, quote=v.quote), transcript, speaker="agent"):
             by_rule.setdefault(v.rule, []).append(
                 Occurrence(
                     turn=v.turn,
@@ -381,7 +417,9 @@ def _score_compliance(
             )
         )
     earned = max(0, COMPLIANCE_POINTS - sum(d.points for d in deductions))
-    return Compliance(earned=earned, deductions=deductions, unverified=unverified)
+    return Compliance(
+        earned=earned, deductions=deductions, unverified=unverified, out_of_window=out_of_window
+    )
 
 
 def score_call(
@@ -398,7 +436,7 @@ def score_call(
         else _score_judge_check(cid, judge, transcript, facts)
         for cid in CHECK_ORDER
     ]
-    compliance = _score_compliance(judge, transcript, flags, catalogue)
+    compliance = _score_compliance(judge, transcript, flags, catalogue, facts)
 
     section_names: tuple[Section, ...] = ("clarity", "discovery_empathy", "outcome")
     sections = [

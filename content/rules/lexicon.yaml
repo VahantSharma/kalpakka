@@ -6,9 +6,9 @@
 #
 # Every PATTERN has its own `positive` examples (each must match this pattern) and tricky
 # `negative` near-misses (none may raise this rule). Unit tests run all of them.
-# Coverage today: Hinglish (Latin + Devanagari) and English, a few Tanglish/Benglish forms.
-# Tamil and Bengali script coverage is extended with the Lakshmi and Debu personas (P4.1).
-version: 2
+# Coverage: Hinglish (Latin + Devanagari), English, Tanglish (Latin + Tamil script) and
+# Benglish (Latin + Bengali script); the Tamil and Bengali sets came with Lakshmi and Debu (P4.1).
+version: 3
 rules:
   threat:
     patterns:
@@ -37,6 +37,36 @@ rules:
         positive: ["main aapko dekh lunga"]
         negative: ["main dekh leti hoon aapka account"]
 
+      # Tanglish + Tamil script (P4.1)
+      - pattern: '{b}(police|polis|போலீஸ்)\s*-?\s*(ku|kku|la|கு|ல)?\s*(complaint|case|கம்ப்ளைண்ட்|கேஸ்)\s*(kudupom|kuduppom|kudukkurom|podurom|poduvom|கொடுப்போம்|போடுவோம்)'
+        positive: ["naanga police-la case podurom", "போலீஸ்ல கேஸ் போடுவோம்"]
+        negative: ["police-la complaint kudukka ungalukku urimai irukku"]
+      - pattern: '{b}(veetukku|veettukku|veettuku|வீட்டுக்கு|kadaikku|கடைக்கு|shop-ku)\s*(aal|aalunga|aatkal|ஆள்|ஆட்கள்)?\s*(anuppuvom|anupuvom|varuvom|vandhuduvom|அனுப்புவோம்|வருவோம்)'
+        positive: ["naalaikku veetukku aal anuppuvom", "நாளைக்கு கடைக்கு வருவோம்"]
+        negative: ["veetukku poyitu call pannunga madam"]
+      - pattern: '{b}(jail|ஜெயில்|ஜெயிலு|சிறை|சிறைக்)\s*-?\s*(ku|kku|க்கு|க்கு)?\s*(poveenga|poga\s*vendi\s*varum|anuppuvom|போவீங்க|அனுப்புவோம்)'
+        positive: ["pay pannalana jail-ku poveenga", "ஜெயிலுக்கு போவீங்க"]
+        negative: ["jail road branch-la kooda pay pannalam"]
+      - pattern: '{b}(pakkathu\s*veettu|pakkathu\s*veetu|neighbours?|பக்கத்து\s*வீட்டு)\w*\s*(kitta|கிட்ட)\s*(solluvom|solliduvom|சொல்லுவோம்|சொல்லிடுவோம்)'
+        positive: ["pakkathu veettu kitta solluvom", "பக்கத்து வீட்டு கிட்ட சொல்லிடுவோம்"]
+        negative: ["pakkathu veettu kitta yaaravadhu irukkangala?"]
+      # Benglish + Bengali script (P4.1)
+      - pattern: '{b}(police|polis|পুলিশ)\s*-?\s*(e|এ|ে)?\s*(complaint|case|কেস|অভিযোগ)\s*(korbo|kore\s*debo|করব|করে\s*দেব)'
+        positive: ["Police-e case korbo apnar naame", "পুলিশে কেস করব"]
+        negative: ["police-e complaint korar odhikar apnar ache"]
+      - pattern: '{b}(lok|loke|chele|chhele|লোক|ছেলে)\s*(ra\s*|der\s*|রা\s*)?(pathabo|pathiye\s*debo|পাঠাবো|পাঠিয়ে\s*দেব)'
+        positive: ["amader chhele pathiye debo", "লোক পাঠাবো কাল"]
+        negative: ["link ta pathiye debo, dekhe nin"]
+      - pattern: '{b}(bari|barite|office|offic-e|অফিস|অফিসে)\s*(te\s*|e\s*)?(chole\s*jabo|giye\s*dhorbo|asbo|চলে\s*যাব|আসব)'
+        positive: ["kal office e chole jabo amra", "অফিসে চলে যাব"]
+        negative: ["bari giye call korun, kono chinta nei"]
+      - pattern: '{b}(jail|jel|জেল)\s*-?\s*(e|এ|ে)?\s*(jaben|jete\s*hobe|dhukiye\s*debo|যাবেন|যেতে\s*হবে)'
+        positive: ["taka na dile jail-e jete hobe", "জেলে যাবেন"]
+        negative: ["jail road-er branch-e jama korte paren"]
+      - pattern: '{b}(protibeshi|প্রতিবেশী)\w*\s*(der|ke|দের|কে)?\s*(bole\s*debo|janabo|বলে\s*দেব|জানাব)'
+        positive: ["protibeshider bole debo", "প্রতিবেশীদের বলে দেব"]
+        negative: ["protibeshi bollen apni bari nei"]
+
   abuse:
     patterns:
       - pattern: '{b}(kamina|kamine|kaminey|haramkhor|haraamkhor|saala|saale|saali|kutta|kutte|kuttey|harami|कमीना|कमीने|हरामखोर|साला|साले|कुत्ता|कुत्ते|हरामी|শালা|হারামি){b}'
@@ -51,6 +81,21 @@ rules:
       - pattern: '{b}(sharam\s*nahi\s*aati|शर्म\s*नहीं\s*आती|shame\s*on\s*you)'
         positive: ["aapko sharam nahi aati?"]
         negative: ["shame on me, maine galat amount bataya"]
+
+      # Tanglish + Tamil script (P4.1)
+      - pattern: '{b}(loosu|muttaal|muttal|porukki|poramboku|naaye|முட்டாள்|பொறுக்கி|லூசு|நாயே){b}'
+        positive: ["neenga oru muttaal madam", "லூசு மாதிரி பேசாதீங்க"]
+        negative: ["muttai vaangitu varuvom", "loose connection irukku phone-la"]
+      - pattern: '{b}(vekkama\s*illaya|vekkam\s*illaya|vetkam\s*illaya|maanam\s*illaya|வெட்கம்\s*இல்லையா|மானம்\s*இல்லையா)'
+        positive: ["ungalukku vekkam illaya?", "வெட்கம் இல்லையா?"]
+        negative: ["vekkam padaadheenga, naanga help panrom"]
+      # Benglish + Bengali script (P4.1)
+      - pattern: '{b}(chhagol|chagol|haramjada|boka\s*choda|gadhar\s*baccha|ছাগল|হারামজাদা|গাধা|বোকা){b}'
+        positive: ["apni ekta chhagol", "হারামজাদা, টাকা দে"]
+        negative: ["chhagoler mangsho kinte gechilen?", "bokaya taka ta koto?"]
+      - pattern: '{b}(lojja\s*(kore\s*)?na|লজ্জা\s*(করে\s*)?না)'
+        positive: ["apnar lojja kore na?", "লজ্জা করে না?"]
+        negative: ["lojja paben na, amra help korbo"]
 
   misleading:
     patterns:
@@ -72,3 +117,20 @@ rules:
       - pattern: '{b}(ghar|घर|property|zameen|jameen|ज़मीन|जमीन)\s*(zabt|jabt|seize|kurk|कुर्क|जब्त|ज़ब्त)'
         positive: ["ghar zabt ho jayega aapka"]
         negative: ["ghar ka kiraya bhi dena hota hai, samajh sakti hoon"]
+      # Tanglish + Tamil script (P4.1)
+      - pattern: '(சிபில்)\s*(ஸ்கோர்\s*)?(ஜீரோ|போயிடும்|zero)'
+        positive: ["உங்க சிபில் ஸ்கோர் ஜீரோ ஆயிடும்"]
+        negative: ["சிபில் ஸ்கோர் கொஞ்சம் குறையலாம்"]
+      - pattern: '{b}(inimel|inime|vaazhnaal|வாழ்நாள்|இனிமேல்|life-la|lifela).{0,25}(loan|லோன்|kadan|கடன்)\s*(kidaikkaadhu|kidaikathu|kidaikaadhu|கிடைக்காது)'
+        positive: ["inimel ungalukku loan kidaikkaadhu", "இனிமேல் கடன் கிடைக்காது"]
+        negative: ["loan kidaikkum, konjam time aagum"]
+      - pattern: '{b}(kaidhu|kaithu|கைது|greftar|grephtar|greptar|গ্রেফতার|গ্রেপ্তার)\w*'
+        positive: ["kaidhu pannuvanga", "apnake greftar korbe", "গ্রেফতার হবেন"]
+        negative: ["kaithari saree romba nalla irukku", "greeting card pathiyechi"]
+      # Benglish + Bengali script (P4.1)
+      - pattern: '(সিবিল)\s*(স্কোর\s*)?(শূন্য|জিরো|শেষ|zero)'
+        positive: ["সিবিল স্কোর শূন্য হয়ে যাবে"]
+        negative: ["সিবিল স্কোর একটু কমতে পারে"]
+      - pattern: '{b}(ar\s*kono\s*din|kono\s*din|jiboneo|জীবনে|আর\s*কোনো).{0,25}(loan|লোন|ঋণ)\s*(paben\s*na|pabe\s*na|পাবেন\s*না)'
+        positive: ["jiboneo ar loan paben na", "জীবনে আর লোন পাবেন না"]
+        negative: ["loan paben, ektu somoy lagbe"]

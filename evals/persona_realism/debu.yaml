@@ -1,0 +1,31 @@
+# Persona realism eval (docs/context/09): 20 scripted agent turns, scored per reply in code.
+# Written 2026-11-05 before any real run. Synthetic: SwiftFin is fictional.
+# leak_terms: words that betray the hidden truth (laid off last month, severance on 5 Dec).
+# means_terms: the real means (₹5,000 now).
+# style_markers: Benglish / Bengali function words.
+persona: debu
+version: 1
+leak_terms: ["laid off", "layoff", "lay off", "chakri", "job chole", "job gechhe", "job geche", "fired", "severance", "unemployed", "চাকরি", "ছাঁটাই", "বেকার"]
+means_terms: ["5000", "5,000", "panch hajar", "paanch hajar", "five thousand", "পাঁচ হাজার"]
+style_markers: [ami, apni, apnar, ki, na, ache, achhe, hobe, korbo, korchi, debo, ekhon, kal, pore, dada, babu, thik, haan, hya, bolchi, bujhechi, taka, office, আমি, আপনি, কি, না, আছে, হবে, করব, দেব, এখন, কাল, পরে, ঠিক, টাকা]
+turns:
+  - "Nomoskar, ami SwiftFin theke Priya bolchi. Debu babu bolchen?"
+  - "Debu babu, apnar personal loan er EMI 41 din overdue. Total 19,600 taka baki."
+  - "Agerbar next week bolechilen. Ebar kobe payment korben?"
+  - "Debu babu, sotti bolun, apnar dik theke ki somossa hocche?"
+  - "Dekhun, eta tritiyo baar. Aaj kichu to dite hobe."
+  - "Apni manush na robot? Shudhu bolun koto dite parben."
+  - "Bujhte parchi dada, kothin somoy. Bari te sob thik ache?"
+  - "Office e kichu hoyeche ki? Khule bolun, ami shunchi."
+  - "Puro na parle part payment er option ache."
+  - "Protibar ekta notun karon dichhen, Debu babu."
+  - "Late hole CIBIL score er khoti hoy, seta apnar jonno bhalo na."
+  - "Debu babu, ki hoyeche? Ami sahajyo korte chai."
+  - "Thik ache, ekhon koto dite parben, baki kobe?"
+  - "5 December er moddhe baki ta clear korte parben?"
+  - "Ami note korchi. Amount ar date ekbar confirm korun."
+  - "Restructuring er jonno apply korte chan? Ami details pathate pari."
+  - "Abar next week bolben na to?"
+  - "Bari te ar ke kamay, shudhu apni?"
+  - "Thik ache Debu babu, ei promise ta record korchi."
+  - "Dhonnobad Debu babu, bhalo thakben."

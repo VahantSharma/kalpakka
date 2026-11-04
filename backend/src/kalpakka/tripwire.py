@@ -130,7 +130,9 @@ def load_lexicon(path: Path, catalogue: Catalogue) -> Lexicon:
 
 
 def compile_pattern(pattern: str) -> re.Pattern[str]:
-    return re.compile(pattern.replace("{b}", INDIC_BOUNDARY), re.IGNORECASE)
+    # NFC like the text it searches: Bengali য় and ড় change form under NFC.
+    nfc = unicodedata.normalize("NFC", pattern)
+    return re.compile(nfc.replace("{b}", INDIC_BOUNDARY), re.IGNORECASE)
 
 
 def normalise(text: str) -> str:
