@@ -28,21 +28,21 @@ Primary sources: <https://docs.gnani.ai/llms.txt> (index), <https://docs.gnani.a
 | Endpoint | `wss://api.vachana.ai/stt/v3/stream` | DOC |
 | Auth header | `x-api-key-id: <key>` | DOC |
 | Model header | `model: prisma-v3.0` | DOC |
-| Language header | `language_code: hi-IN,en-IN` (persona-specific list), or `indic-auto` for auto language ID | DOC |
-| Output format header | `format: transcribe` (live default: amounts/dates as digits). Others: `verbatim`, `codemix`, `transliterate` | DOC |
-| Keyterms header | `keyterms` (up to 200): EMI, NACH, PTP, CIBIL, foreclosure, bounce charge, SwiftFin, persona name | DOC (exact separator UNVERIFIED) |
+| Language header | `language_code`: **exactly one locale** (`hi-IN`). A list (`hi-IN,en-IN`) is rejected with `error` + 1008: "exactly one locale is required … Use multi_lang_codes for parallel multi-locale transcription". English words still come out in Roman with `hi-IN`. `multi_lang_codes`, `indic-auto`, `ta-IN`, `bn-IN`: UNVERIFIED | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
+| Output format header | `format: transcribe`: Devanagari for Hindi, Roman for English/brand words, digits for amounts and dates ("12500", "20 November"). Others (`verbatim`, `codemix`, `transliterate`) not tried | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
+| Keyterms header | `keyterms`, comma-separated (up to 200, DOC). With them "SwiftFin", without "Swift Fin"; a `\|` separator corrupts the transcript | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
 | Sample rate header | `x-sample-rate: 16000` (8000 for the phone-line Arena loop) | DOC |
 | VAD headers | `x-vad-threshold`, `x-min-silence-ms` (we use 600), `x-min-speech-ms` — fixed at connection time | DOC |
 | Idle timeout header | `x-idle-timeout-sec` (raise to 300) | DOC |
 | Request id header | `x-api-request-id` (send our `call_id`) | DOC |
 | Audio frames | binary, **exactly 1,024 bytes** = 512 little-endian int16 samples, sent at real-time pace (32 ms per frame at 16 kHz) | DOC |
 | Force segment end | send text `{"type":"commit"}` (on push-to-talk release) | DOC |
-| Server messages | `connected` (echoes config), `speech_start`, `processing`, `transcript` (`text`, `detected_language_code`, `latency`, `segment_index`), `error` | DOC |
-| Partials | **none**: one final transcript per speech segment | DOC |
+| Server messages | `connected` (config echo nested under `config`: `sample_rate`, `chunk_size`, `partials_enabled`, `language_code`, `format`; no `model`), `speech_start` (`utterance_id`, `t_ms`), `transcript` (top-level `text`, `detected_language_code`, `latency` ms, `segment_index`, `segment_id`, `utterance_id`, `is_final`, `audio_duration_ms`), `error` (`message`). `processing` never seen | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
+| Partials | none by default (`connected` reports `partials_enabled: false`); one final per segment. How to enable: UNVERIFIED, not needed | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
 | Max session | 15 minutes | DOC |
 | Bad config | socket closes with 1008 / first message `error` | DOC |
-| `speaker_names` and `topic` on the realtime stream with v3 | docs disagree | UNVERIFIED (spike 02) |
-| Latency from segment end to `transcript` | ~0.3–0.6 s | target, UNVERIFIED |
+| `speaker_names` and `topic` on the realtime stream with v3 | accepted silently, not echoed, transcript unchanged: treat as no-ops | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
+| Latency from commit to `transcript` | release straight after speech: 0.315–0.385 s, p50 0.344 s (n=5). If VAD already closed the segment (≥ 0.6 s trailing silence): 0.021–0.075 s. Server `latency` field 130–236 ms. Commit with no speech: no message at all within 6.8 s | MEASURED 2026-11-09, [spike 02](../research/spike-02-prisma-stt.md) |
 | Batch / REST transcription (for Audit mode) | exists | DOC; endpoint details not yet read |
 
 Languages: nine Indian languages plus English (10), code-mixing supported, trained on telephone
