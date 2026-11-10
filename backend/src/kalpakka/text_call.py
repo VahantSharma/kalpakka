@@ -135,7 +135,7 @@ class TextCall:
 
         Known gap: if that turn was the reveal turn, the engine still marks the truth revealed
         (`end_turn` applies `reveal_now`), though nobody heard it. Fixing it needs a
-        `BorrowerEngine.cancel_turn()`; proposed in docs/phases/CLOUD-RUN-C.md."""
+        `BorrowerEngine.cancel_turn()`."""
         turn = self.engine.upcoming_turn
         t_agent = self._now()
         raised = self._tripwire.on_segment(text, segment=0, t=t_agent, engine=self.engine)

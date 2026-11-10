@@ -21,7 +21,7 @@ browser (Vercel) ──wss/https──▶ Caddy (sslip.io TLS) ──▶ backend
 | `gpu/llama-server.flags` | the one list of llama-server flags (RunPod and the Modal spike) — confirm after P0.5 |
 | `gpu/warmup.py` | 3 real Ramesh turns through the backend's prompt code |
 | `vllm/launch.sh` | vLLM fallbacks (FP8 on the A6000; BF16 on an A100 80 GB) |
-| `../scripts/spikes/evon_modal/` | P0.5 spike on Modal (runbook: `docs/phases/P0-foundation/P0.5-evon-spike.md`) |
+| `../scripts/spikes/evon_modal/` | P0.5 spike on Modal |
 | `../evals/quant_gate/` | BF16 vs quant gates + blind A/B |
 
 Tests for the pure helpers (budget, spike maths, gate, RunPod money rules, smoke protocol):
@@ -86,7 +86,6 @@ Every step prints what it did. Paste each `[cost]` line into the table at the en
 | 23:00 | `uv run --script infra/gpu/runpod.py stop` | `terminated … after N h at $… ≈ $…` + `[cost]` line. Missed it? The pod self-terminates at 23:15 |
 | 23:05 | `runpod.py status` | `no pod running` — and the RunPod console shows no pod |
 
-Incident notes go to `docs/launch/incidents.md` (time, symptom, action, number).
 
 ### Cost per stop (fill in from the `[cost]` / `terminated` lines)
 
